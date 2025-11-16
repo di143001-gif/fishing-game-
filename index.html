@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câu Cá Cá Lóc - Web Game</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://pyscript.net/releases/2023.11.1/core.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.1/core.css">
+</head>
+<body>
+    <div id="loading">Đang tải game...</div>
+    
+    <div id="game-container" style="display: none;">
+        <!-- Pygame canvas sẽ được tạo ở đây -->
+    </div>
+
+    <div id="leaderboard-panel">
+        <h3>🏆 Bảng Xếp Hạng</h3>
+        <div id="leaderboard-content">
+            <div class="loading">Đang tải...</div>
+        </div>
+        <button onclick="refreshLeaderboard()">🔄 Làm mới</button>
+        <button onclick="submitScore()">📤 Gửi điểm</button>
+    </div>
+
+    <script>
+        // Hàm refresh bảng xếp hạng
+        async function refreshLeaderboard() {
+            try {
+                const response = await fetch('/leaderboard');
+                const data = await response.json();
+                
+                let html = '<table>';
+                html += '<tr><th>Hạng</th><th>Tên</th><th>Cấp</th><th>Xu</th><th>Cá</th></tr>';
+                
+                data.leaderboard.forEach((player, index) => {
+                    html += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${player.name}</td>
+                            <td>${player.level}</td>
+                            <td>${player.coins}</td>
+                            <td>${player.fish_count}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</table>';
+                document.getElementById('leaderboard-content').innerHTML = html;
+            } catch (error) {
+                console.error('Lỗi tải bảng xếp hạng:', error);
+            }
+        }
+
+        // Hàm gửi điểm
+        async function submitScore() {
+            try {
+                // Lấy dữ liệu từ Pygame thông qua PyScript
+                const playerData = await getPlayerData();
+                
+                const response = await fetch('/submit_score', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(playerData)
+                });
+                
+                const result = await response.json();
+                alert(result.message);
+                refreshLeaderboard();
+            } catch (error) {
+                console.error('Lỗi gửi điểm:', error);
+            }
+        }
+
+        // Hàm lấy dữ liệu player từ Pygame
+        async function getPlayerData() {
+            // Sẽ được implement trong PyScript
+            return {
+                name: "Người chơi",
+                level: 1,
+                coins: 0,
+                fish_count: 0
+            };
+        }
+
+        // Tự động refresh bảng xếp hạng mỗi 30 giây
+        setInterval(refreshLeaderboard, 30000);
+        
+        // Load bảng xếp hạng khi trang được tải
+        window.addEventListener('load', refreshLeaderboard);
+    </script>
+
+    <py-config>
+        packages = ["pygame", "flask", "json"]
+        [[fetch]]
+        files = ["./game.py", "./leaderboard.py"]
+    </py-config>
+
+    <py-script src="./game.py"></py-script>
+</body>
+</html>
