@@ -9,30 +9,35 @@
     <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.1/core.css">
 </head>
 <body>
-    <div id="loading">Đang tải game...</div>
+    <div id="loading">Đang tải game... Vui lòng chờ trong giây lát</div>
     
-    <div id="game-container" style="display: none;">
-        <!-- Pygame canvas sẽ được tạo ở đây -->
+    <div id="game-container">
+        <!-- Game sẽ hiển thị ở đây -->
     </div>
 
     <div id="leaderboard-panel">
         <h3>🏆 Bảng Xếp Hạng</h3>
         <div id="leaderboard-content">
-            <div class="loading">Đang tải...</div>
+            <div class="loading">Đang tải dữ liệu...</div>
         </div>
+        <button onclick="submitScore()">📤 Gửi điểm của tôi</button>
         <button onclick="refreshLeaderboard()">🔄 Làm mới</button>
-        <button onclick="submitScore()">📤 Gửi điểm</button>
     </div>
 
     <script>
-        // Hàm refresh bảng xếp hạng
+        // Ẩn loading screen khi game sẵn sàng
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Refresh bảng xếp hạng
         async function refreshLeaderboard() {
             try {
-                const response = await fetch('/leaderboard');
+                const response = await fetch('./leaderboard.json');
                 const data = await response.json();
                 
                 let html = '<table>';
-                html += '<tr><th>Hạng</th><th>Tên</th><th>Cấp</th><th>Xu</th><th>Cá</th></tr>';
+                html += '<tr><th>Hạng</th><th>Tên</th><th>Cấp</th><th>Xu</th><th>Cá</th><th>Điểm</th></tr>';
                 
                 data.leaderboard.forEach((player, index) => {
                     html += `
@@ -42,6 +47,7 @@
                             <td>${player.level}</td>
                             <td>${player.coins}</td>
                             <td>${player.fish_count}</td>
+                            <td>${player.total_score || 0}</td>
                         </tr>
                     `;
                 });
@@ -49,56 +55,42 @@
                 html += '</table>';
                 document.getElementById('leaderboard-content').innerHTML = html;
             } catch (error) {
-                console.error('Lỗi tải bảng xếp hạng:', error);
+                document.getElementById('leaderboard-content').innerHTML = 
+                    '<div class="error">Không thể tải bảng xếp hạng</div>';
             }
         }
 
-        // Hàm gửi điểm
-        async function submitScore() {
-            try {
-                // Lấy dữ liệu từ Pygame thông qua PyScript
-                const playerData = await getPlayerData();
-                
-                const response = await fetch('/submit_score', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(playerData)
-                });
-                
-                const result = await response.json();
-                alert(result.message);
-                refreshLeaderboard();
-            } catch (error) {
-                console.error('Lỗi gửi điểm:', error);
-            }
+        // Gửi điểm (simulate - thực tế cần backend)
+        function submitScore() {
+            alert('Tính năng này cần backend server. Trong demo, điểm được lưu cục bộ.');
         }
 
-        // Hàm lấy dữ liệu player từ Pygame
-        async function getPlayerData() {
-            // Sẽ được implement trong PyScript
-            return {
-                name: "Người chơi",
-                level: 1,
-                coins: 0,
-                fish_count: 0
-            };
-        }
-
-        // Tự động refresh bảng xếp hạng mỗi 30 giây
+        // Tự động refresh mỗi 30 giây
         setInterval(refreshLeaderboard, 30000);
         
         // Load bảng xếp hạng khi trang được tải
-        window.addEventListener('load', refreshLeaderboard);
+        window.addEventListener('load', () => {
+            refreshLeaderboard();
+            // Giả lập loading game
+            setTimeout(hideLoading, 2000);
+        });
     </script>
 
     <py-config>
-        packages = ["pygame", "flask", "json"]
+        packages = ["pygame"]
         [[fetch]]
-        files = ["./game.py", "./leaderboard.py"]
+        files = ["./game.py"]
     </py-config>
 
-    <py-script src="./game.py"></py-script>
+    <py-script>
+        import js
+        js.hideLoading()
+        
+        # Import và chạy game
+        from game import main_game_loop
+        print("Game Python đã sẵn sàng!")
+        
+        # Ghi chú: Trong môi trường web, game sẽ chạy độc lập
+    </py-script>
 </body>
 </html>
